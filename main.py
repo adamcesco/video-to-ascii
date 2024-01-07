@@ -6,7 +6,7 @@ import sys
 
 # Constants for terminal dimensions and aspect ratio
 ASPECT_RATIO = 16 / 9
-WIDTH = 80
+WIDTH = 200
 HEIGHT = int(WIDTH / (2 * ASPECT_RATIO))
 
 # Character set for ASCII art and ANSI color codes
@@ -21,10 +21,11 @@ LERPED = pickle.load(open("colors.pkl", "rb"))
 def set_color(bg, fg):
     return "\u001b[48;5;%s;38;5;%sm" % (bg, fg)
 
+
 # Convert RGB image to text with colored ASCII art
 def convert_img(img):
+    # clear the terminal
     lines = []
-
     for row in img:
         line = ""
         for color in row:
@@ -41,26 +42,46 @@ def convert_img(img):
         line += BLACK + "\n"  # Add a black background to avoid color fringe
         lines.append(line)
 
-    # Move the cursor to the top left to prevent rolling effect
-    lines.append("\u001b[%iD\u001b[%iA" % (WIDTH, HEIGHT + 1))
+    # # Move the cursor to the top left to prevent rolling effect
+    # lines.append("\u001b[%iD\u001b[%iA" % (WIDTH, HEIGHT + 1))
     return "".join(lines)
 
 # Main function for video to ASCII conversion
 def main():
     if len(sys.argv) == 2:
+        f = open('./output.txt', 'w')
         video_path = sys.argv[1]
         cap = cv2.VideoCapture(video_path)
 
-        with cap:
-            while True:
-                ret, frame = cap.read()
+        count = 0
+        while True:
+            ret, frame = cap.read()
 
-                # Check if the frame was successfully read
-                if not ret:
-                    break
+            # Check if the frame was successfully read
+            if not ret:
+                break
 
-                img = cv2.resize(frame, (WIDTH, HEIGHT))
-                print(convert_img(img))
+            img = cv2.resize(frame, (WIDTH, HEIGHT))
+            count += 1
+            # f.write(convert_img(img))
+            print(convert_img(img))
+
+        print(count)
+        f.close()
+    elif len(sys.argv) == 3:
+        video_path = sys.argv[1]
+        frame_num = int(sys.argv[2])
+        
+        cap = cv2.VideoCapture(video_path)
+
+        if frame_num < 0 or frame_num >= cap.get(cv2.CAP_PROP_FRAME_COUNT):
+            print("Invalid frame number.")
+            return
+
+        cap.set(cv2.CAP_PROP_POS_FRAMES, frame_num)
+        ret, frame = cap.read()
+        img = cv2.resize(frame, (WIDTH, HEIGHT))
+        print(convert_img(img))
     else:
         print("Expected video file as an argument.")
 
